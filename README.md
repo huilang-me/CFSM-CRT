@@ -33,6 +33,7 @@ npm run build
 | `CSP_API` | 追加到 `connect-src` 的域名（同样自动补 `wss://`） |
 | `CSP_STATIC` | 追加到 script / style / img / font 指令的域名 |
 | `VITE_DEV_PROXY_TARGET` | 本地 dev / preview 的代理目标，默认 `https://localhost:8787` |
+| `IGNORE_ENV` | 设为 `1` 时忽略所有环境变量和 `.env`，用于构建通用 dist |
 
 `.env` 已在 `.gitignore` 中，不要提交真实 Worker 地址。
 
@@ -57,8 +58,12 @@ GitHub Actions 通过仓库 Secrets 注入（同名变量会覆盖 `.env`），�
 | `CSP_API` | 追加到 `connect-src` 的 API 域名 |
 | `CSP_STATIC` | 追加到静态资源指令的域名 |
 
-推送到 `main` / `master` 后，workflow 会构建并**追加提交**到 `dist` 分支（保留历史，不 force push）。
-在仓库 Settings → Pages 里选择 `dist` 分支作为托管源，并开启 Actions 的 `contents: write` 权限。
+推送到 `main` / `master` 后，`deploy.yml` 会构建并**追加提交**到 `dist` 分支（保留历史，不 force push）。
+这个产物面向 Theme Store：构建时设置 `IGNORE_ENV=1`，不读取 Secrets 和 `.env`，是通用版本。
+
+需要带站点配置的在线预览时，运行 `deploy-github-page.yml`（手动触发；或仓库配置了 `API_BASE` Secret 时随推送自动运行）。
+它会读取上面的 Secrets 构建，并以相对路径部署到 GitHub Pages。
+此时 Settings → Pages 的 Source 需要选择 **GitHub Actions**（选 `dist` 分支时该 workflow 不会生效）。
 
 ## 跨域部署
 

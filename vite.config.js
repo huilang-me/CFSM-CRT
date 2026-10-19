@@ -31,9 +31,12 @@ const escapeHtml = (value) => String(value || '')
 const escapeCss = (value) => String(value || '').replace(/'/g, '%27')
 
 // 真实环境变量（GitHub Actions Secrets、命令行）优先，其次 .env / .env.local / .env.[mode]
+// IGNORE_ENV=1 时完全忽略环境变量与 .env 文件，用于构建不含站点配置的通用 dist
 function readEnv(mode) {
-  const file = loadEnv(mode, __dirname, '')
+  const ignore = process.env.IGNORE_ENV === '1'
+  const file = ignore ? {} : loadEnv(mode, __dirname, '')
   const pick = (key) => {
+    if (ignore) return ''
     const value = process.env[key]
     if (value !== undefined && value !== '') return value
     return file[key] ?? ''
@@ -102,7 +105,8 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [vue(), basicSsl(), runtimeConfig(env)],
-    base: '/',
+    // GitHub Pages 等子路径部署时用 VITE_BASE 覆盖，默认站点根目录
+    base: process.env.VITE_BASE || '/',
     resolve: {
       alias: { '@': path.resolve(__dirname, 'src') }
     },

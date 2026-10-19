@@ -30,14 +30,11 @@ jobs:
       - name: install
         run: npm ci
 
+      # dist 分支是通用产物，忽略 Secrets 与 .env 中的所有站点配置
       - name: build
         run: npm run build
         env:
-          API_BASE: ${{ secrets.API_BASE }}
-          TITLE: ${{ secrets.TITLE }}
-          BACKGROUND_IMAGE: ${{ secrets.BACKGROUND_IMAGE }}
-          CSP_API: ${{ secrets.CSP_API }}
-          CSP_STATIC: ${{ secrets.CSP_STATIC }}
+          IGNORE_ENV: '1'
 
       - name: publish to dist branch
         env:
