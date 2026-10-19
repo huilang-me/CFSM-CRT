@@ -1,0 +1,45 @@
+{
+  "name": "CRT",
+  "short": "crt",
+  "description": "终端风格主题：tmux 状态栏、htop 面板、top 表格和 sar 曲线，用命令行的方式展示服务器状态",
+  "version": "1.0.0",
+  "author": "huilang-m",
+  "url": "https://github.com/huilang-me/CFSM-CRT",
+  "config": [
+    { "type": "title", "label": "外观" },
+    { "key": "palette", "type": "select", "label": "默认配色", "default": "graphite",
+      "help": "访客第一次打开时看到的配色；访客自己切换过之后，以访客的选择为准",
+      "options": [
+        { "value": "graphite", "label": "Graphite 石墨" },
+        { "value": "phosphor", "label": "Phosphor 磷光绿" },
+        { "value": "amber", "label": "Amber 琥珀" },
+        { "value": "nord", "label": "Nord 北极蓝" },
+        { "value": "dusk", "label": "Dusk 暮紫" },
+        { "value": "paper", "label": "Paper 纸白（浅色）" }
+      ] },
+    { "key": "allow_switch", "type": "boolean", "label": "允许访客切换配色", "default": true },
+    { "key": "scanlines", "type": "boolean", "label": "扫描线", "default": false,
+      "help": "在页面上叠一层很淡的 CRT 横纹" },
+    { "type": "title", "label": "Shell" },
+    { "key": "username", "type": "string", "label": "访客用户名", "default": "guest",
+      "help": "访客提示符里的用户名，例如 guest@hostname:~$；管理员登录后显示为 root@hostname:~#。只用英文字母、数字、点、横线和下划线" },
+    { "key": "hostname", "type": "string", "label": "主机名", "default": "",
+      "help": "提示符里 @ 后面的名字，留空则使用站点名的小写形式。只用英文字母、数字、点、横线和下划线" },
+    { "type": "title", "label": "首页" },
+    { "key": "notice", "type": "text", "label": "公告", "default": "",
+      "help": "以纯文本显示在页面顶部，留空不显示" },
+    { "key": "show_summary", "type": "boolean", "label": "显示汇总", "default": true,
+      "help": "页面上方 top 的汇总区：在线数、负载、CPU、内存、网速和本月流量" },
+    { "key": "default_view", "type": "select", "label": "默认视图", "default": "grid",
+      "help": "访客第一次打开时的视图；访客自己切换过之后，以访客的选择为准",
+      "options": [
+        { "value": "grid", "label": "htop 面板" },
+        { "value": "list", "label": "top 表格" }
+      ] },
+    { "key": "show_ping", "type": "boolean", "label": "显示延迟", "default": true,
+      "help": "首页面板/表格里的三网延迟与丢包；还需后台开启三网详情" },
+    { "type": "title", "label": "顶栏" },
+    { "key": "show_admin", "type": "boolean", "label": "显示后台入口", "default": true,
+      "help": "顶部状态栏里的 admin 链接；登录后始终显示" }
+  ]
+}
