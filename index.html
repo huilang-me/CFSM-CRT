@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en" data-palette="graphite">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="apiBase" content="" />
+    <link rel="icon" href="/assets/favicon.svg" />
+    <link rel="preload" href="/assets/fonts/jetbrains-mono-400.woff2" as="font" type="font/woff2" crossorigin />
+    <title>CF Server Monitor</title>
+    <script>
+      try {
+        var p = localStorage.getItem("crt.palette")
+        if (p) document.documentElement.dataset.palette = p
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="/assets/index-B3hdbuiq.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-HDkSxFDR.css">
+  </head>
+  <body>
+    <div id="app">
+      <div class="boot">connecting<span class="cursor">█</span></div>
+    </div>
+    <div class="scan" aria-hidden="true"></div>
+    <script>
+      setTimeout(function () {
+        var app = document.getElementById("app")
+        if (app && app.querySelector(".boot")) {
+          app.innerHTML = '<div class="boot err">theme assets failed to load. check the console and reload.</div>'
+        }
+      }, 15000)
+    </script>
+  </body>
+</html>
