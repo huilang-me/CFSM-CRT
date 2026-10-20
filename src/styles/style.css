@@ -121,6 +121,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .hi, .b { color: var(--fg); font-weight: 500; }
 .num { font-variant-numeric: tabular-nums; }
 .cursor { animation: blink 1.06s steps(1) infinite; color: var(--fg); }
+.spin { display: inline-block; width: 1ch; text-align: center; color: var(--accent); }
 @keyframes blink { 50% { opacity: 0; } }
 .link { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent); }
 .link:hover { text-decoration-color: var(--accent); }
@@ -129,6 +130,14 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .app { max-width: var(--maxw); margin: 0 auto; padding: 18px 24px 0; }
 
 .boot { padding: 24px; color: var(--dim); }
+.boot-screen {
+  position: fixed; inset: 0; z-index: 45;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); color: var(--dim);
+}
+.boot-screen-line { font-size: 1.05em; }
+.fade-enter-active, .fade-leave-active { transition: opacity .18s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 
 .scan {
   pointer-events: none; position: fixed; inset: 0; z-index: 50; display: none;
@@ -153,6 +162,12 @@ html.scan-on .scan { display: block; }
 .tmux .sess { background: var(--accent); color: var(--bg); padding: 0 10px; font-weight: 500; margin-right: 10px; }
 .tmux .wins { display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 0 1 auto; }
 .tmux .wins::-webkit-scrollbar { display: none; }
+.tmux .wins.fade-l { mask-image: linear-gradient(to right, transparent, #000 18px); -webkit-mask-image: linear-gradient(to right, transparent, #000 18px); }
+.tmux .wins.fade-r { mask-image: linear-gradient(to left, transparent, #000 18px); -webkit-mask-image: linear-gradient(to left, transparent, #000 18px); }
+.tmux .wins.fade-l.fade-r {
+  mask-image: linear-gradient(to right, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+}
 .tmux .win { padding: 0 8px; color: var(--dim); }
 .tmux .win:hover { color: var(--fg); }
 .tmux .win.on { color: var(--fg); background: color-mix(in srgb, var(--accent) 30%, var(--bg)); }
@@ -164,7 +179,6 @@ html.scan-on .scan { display: block; }
 .tmux .views button:hover { color: var(--fg); }
 .tmux .views button[aria-pressed="true"] { color: var(--bg); background: var(--dim); }
 .tmux .adm:hover { color: var(--fg); }
-.tmux .up { color: var(--fg); }
 .tmux .clk { background: color-mix(in srgb, var(--accent) 30%, var(--bg)); color: var(--fg); padding: 0 10px; }
 .theme { position: relative; }
 .tbtn { color: var(--dim); }
@@ -207,7 +221,6 @@ html.scan-on .scan { display: block; }
 .pane .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .pane .tag { color: var(--dim); padding-left: 0; flex: none; }
 .pane .head .grow { flex: 1; background: none; padding: 0; }
-.pane .st { flex: none; }
 
 .pane .body { overflow: hidden; line-height: 1.45; }
 .pane .body .err { white-space: pre-wrap; }
@@ -216,20 +229,30 @@ html.scan-on .scan { display: block; }
 .pane .row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .pane .body .wrap { white-space: pre-wrap; }
 .mk, .tk { color: var(--key); font-weight: 500; }
+/* meter lines fill the pane: [ stays next to the label, ] sits on the right edge,
+   the bar scales with the available width instead of a fixed 24 cells. */
+.pane .ln.meter { display: flex; align-items: stretch; }
+.pane .ln.meter > .mk, .pane .ln.meter > .br, .pane .ln.meter > .mv { flex: none; }
+.pane .ln.meter > .mbar { flex: 1 1 0; min-width: 0; overflow: hidden; }
+.pane .ln.meter > .mbar > .bar { display: block; overflow: hidden; white-space: nowrap; }
 .br { color: var(--dim); }
 .bar.ok { color: var(--accent); }
 .bar.warn { color: var(--warn); }
 .bar.err { color: var(--err); }
 .mv { color: var(--dim); }
 .lat { display: flex; align-items: center; gap: 12px; margin-top: 3px; white-space: nowrap; overflow: hidden; }
-.lat .nums { display: flex; gap: 10px; min-width: 0; overflow: hidden; }
+.lat .nums { flex: 1; display: flex; gap: 10px; justify-content: space-between; min-width: 0; overflow: hidden; }
 .lat .nums span { white-space: nowrap; }
+.lat .nums .lb { padding-right: .6ch; }
 
 .table { padding-top: 4px; }
 .tbl { display: inline-block; min-width: 0; }
+/* every cell gets a fixed ch-wide box: CJK / emoji fall back to fonts whose
+   advance is not exactly 2ch, which used to shift every column after them. */
+.table .c { display: inline-block; overflow: hidden; white-space: pre; vertical-align: top; }
 .thead { background: color-mix(in srgb, var(--fg) 82%, var(--bg)); color: var(--bg); padding: 1px 1ch 1px 0; line-height: 1.7; }
 .thead button:hover, .thead button.on { text-decoration: underline; text-underline-offset: 3px; }
-.trow { cursor: pointer; line-height: 1.95; }
+.trow { cursor: pointer; line-height: 1.95; padding-right: 1ch; }
 .trow:hover { background: var(--sel); }
 .trow.off { opacity: .6; }
 
@@ -307,7 +330,7 @@ html.scan-on .scan { display: block; }
 
 .overlay {
   position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, .55); padding: 24px;
+  background: rgba(0, 0, 0, .55); padding: 24px; overflow-y: auto; overscroll-behavior: contain;
 }
 .box {
   position: relative; background: var(--panel); border: 1px solid var(--faint);
@@ -318,7 +341,16 @@ html.scan-on .scan { display: block; }
 .box .actions { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
 .box .actions button { color: var(--accent); }
 .box .actions button:hover { text-decoration: underline; text-underline-offset: 3px; }
-.gate-widget { margin-top: 12px; min-height: 66px; }
+/* The turnstile challenge renders inside the widget container, so neither the
+   box nor the widget holder may clip or scroll internally or the popup is cut off. */
+.overlay.gate { align-items: flex-start; }
+.overlay.gate .box {
+  margin: auto; width: min(560px, 100%); max-height: none; overflow: visible;
+}
+.gate-widget {
+  margin-top: 12px; min-height: 66px; overflow: visible;
+  display: flex; justify-content: center; align-items: flex-start;
+}
 .set-row { display: flex; align-items: baseline; gap: 10px; line-height: 2; }
 .set-row .k { color: var(--key); min-width: 18ch; }
 .set-row .v { color: var(--fg); }
@@ -327,7 +359,7 @@ html.scan-on .scan { display: block; }
 .set-row .h { color: var(--dim); }
 
 @media (max-width: 760px) {
-  body { font-size: 12px; }
+  body { font-size: 11px; }
   .app { padding: 12px 12px 0; }
   .tmux { padding: 0 0 0 0; flex-wrap: nowrap; }
   .tmux .sess { margin-right: 4px; padding: 0 8px; }
@@ -340,6 +372,10 @@ html.scan-on .scan { display: block; }
   .cli .ps1 { max-width: 46vw; overflow: hidden; text-overflow: ellipsis; }
   .detail .term { white-space: pre-wrap; }
   .pane .row { gap: 10px; }
+  .overlay { padding: 12px; }
+  .box { padding: 16px 12px 14px; }
+  .home .term { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .home .table { white-space: pre; }
 }
 @media (min-width: 1200px) {
   body { font-size: 14px; }

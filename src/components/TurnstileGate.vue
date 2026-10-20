@@ -1,5 +1,5 @@
 <template>
-  <div class="overlay">
+  <div class="overlay gate">
     <div class="box">
       <div class="head"><span>verification required</span></div>
       <div class="dim">This status page is protected by Turnstile. Complete the challenge to continue.</div>

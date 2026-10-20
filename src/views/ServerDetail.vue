@@ -5,7 +5,7 @@
     </div>
 
     <div v-else-if="error" class="term">
-      <PsLine :user="user" :host="nodeHost" :sigil="sigil" cmd="ssh" :args="id" />
+      <PsLine :user="user" :host="nodeHost" :sigil="sigil" cmd="ssh" />
       <div class="ln err">ssh: {{ error }}</div>
       <div class="ln dim">Back to all servers: <button class="link" @click="goHome">cd ~</button></div>
     </div>
@@ -13,7 +13,7 @@
     <template v-else-if="server">
       <div class="info">
         <div class="blk">
-          <PsLine :user="user" :host="nodeHost" :sigil="sigil" cmd="ssh" :args="nodeHost" />
+          <PsLine :user="user" :host="nodeHost" :sigil="sigil" cmd="ssh" />
           <div class="term dim">
             <div v-if="online" class="ln">Welcome to {{ server.os || nodeHost }}</div>
             <div v-else class="ln err">ssh: connect to host {{ nodeHost }} port 22: Connection timed out</div>
@@ -85,7 +85,7 @@
             <div class="ln"><span class="mk">{{ pad('this month', 14, 1) }}</span>  {{ pad(iec(server.net_rx_monthly), 12, 1) }}<span class="dim">  /</span>{{ pad(iec(server.net_tx_monthly), 12, 1) }}<span class="dim">  /</span>{{ pad(iec(trafficUsed(server)), 12, 1) }}</div>
             <div class="ln"><span class="mk">{{ pad('all time', 14, 1) }}</span>  {{ pad(iec(server.net_rx), 12, 1) }}<span class="dim">  /</span>{{ pad(iec(server.net_tx), 12, 1) }}<span class="dim">  /</span>{{ pad(iec((Number(server.net_rx) || 0) + (Number(server.net_tx) || 0)), 12, 1) }}</div>
             <div class="ln"><span class="mk">{{ pad('now', 14, 1) }}</span>  {{ pad(iecRate(server.net_in_speed), 12, 1) }}<span class="dim">  /</span>{{ pad(iecRate(server.net_out_speed), 12, 1) }}</div>
-            <div v-if="quotaText" class="ln dim">{{ ' '.repeat(14) }}{{ quotaText }}</div>
+            <div v-if="quota" class="ln"><span class="mk">{{ pad('quota', 14, 1) }}</span>{{ '  ' + iec(quota.used) + ' of ' + iec(quota.limit) + '  ' }}<span :class="level(quota.percent)">{{ quota.percent.toFixed(1) + '%' }}</span><span v-if="quota.reset > 0" class="dim">{{ '  resets day ' + quota.reset }}</span></div>
           </div>
         </div>
 
@@ -150,7 +150,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CliPrompt from '../components/CliPrompt.vue'
 import PsLine from '../components/PsLine.vue'
@@ -176,6 +176,7 @@ const baseUrl = computed(() => String(route.query.b || getApiBases()[0]))
 
 const server = ref(null)
 const loading = ref(true)
+watchEffect(() => { state.pageLoading = loading.value && !server.value })
 const error = ref('')
 const historyError = ref('')
 const liveError = ref('')
@@ -229,13 +230,15 @@ const expireText = computed(() => {
   return raw.slice(0, 10) + (days >= 0 ? ' (' + days + 'd left)' : ' (expired)')
 })
 
-const quotaText = computed(() => {
+const quota = computed(() => {
   const limit = trafficLimitBytes(server.value)
-  if (!limit) return ''
-  const percent = trafficPercent(server.value)
-  const reset = Number(server.value?.reset_day)
-  return 'quota ' + iec(trafficUsed(server.value)) + ' of ' + iec(limit) + ' (' + percent.toFixed(1) + '%)' +
-    (reset > 0 ? ', resets on day ' + reset : '')
+  if (!limit) return null
+  return {
+    used: trafficUsed(server.value),
+    limit,
+    percent: trafficPercent(server.value),
+    reset: Number(server.value?.reset_day) || 0
+  }
 })
 
 const gpus = computed(() => parseGpuInfo(server.value?.gpu_info))
@@ -598,6 +601,7 @@ watch(availableRanges, (list) => {
 })
 
 onBeforeUnmount(() => {
+  state.pageLoading = false
   setCurrent(null)
   closeSocket()
   if (onVisibility) document.removeEventListener('visibilitychange', onVisibility)

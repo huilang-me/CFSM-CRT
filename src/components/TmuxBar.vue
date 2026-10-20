@@ -2,7 +2,13 @@
   <header class="tmux">
     <div class="tin">
       <button class="sess" title="Home" @click="$emit('home')">[{{ host }}]</button>
-      <nav class="wins" aria-label="Groups">
+      <nav
+        ref="winsEl"
+        class="wins"
+        :class="{ 'fade-l': edge.left, 'fade-r': edge.right }"
+        aria-label="Groups"
+        @scroll.passive="syncEdge"
+      >
         <template v-if="!nodeLabel">
           <button
             v-for="(w, i) in windows"
@@ -25,7 +31,6 @@
       </span>
 
       <span v-if="total" class="stat seg">
-        <span class="num up">{{ up }}/{{ total }} up</span>
         <span class="num clk">{{ clockText }}</span>
       </span>
 
@@ -57,7 +62,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { PALETTES } from '../utils/constants'
 import { clockShort } from '../utils/format'
 
@@ -66,7 +71,6 @@ const props = defineProps({
   groups: { type: Array, default: () => [] },
   group: { type: [String, null], default: null },
   view: { type: String, default: 'grid' },
-  up: { type: Number, default: 0 },
   total: { type: Number, default: 0 },
   error: { type: String, default: '' },
   palette: { type: String, default: 'graphite' },
@@ -104,6 +108,41 @@ function openSettings() {
 }
 
 const close = () => { menuOpen.value = false }
-onMounted(() => window.addEventListener('click', close))
-onBeforeUnmount(() => window.removeEventListener('click', close))
+
+// the window list scrolls sideways when there are many groups: fade the edges
+// that hide content so it is obvious there is more, and keep the active one in view
+const winsEl = ref(null)
+const edge = reactive({ left: false, right: false })
+
+function syncEdge() {
+  const el = winsEl.value
+  if (!el) return
+  edge.left = el.scrollLeft > 1
+  edge.right = Math.ceil(el.scrollLeft + el.clientWidth) < el.scrollWidth - 1
+}
+
+async function revealActive() {
+  await nextTick()
+  winsEl.value?.querySelector('.win.on')?.scrollIntoView({ inline: 'nearest', block: 'nearest' })
+  syncEdge()
+}
+
+let resizeObserver = null
+
+watch(() => props.group, revealActive)
+watch(() => props.groups, () => { revealActive() })
+
+onMounted(() => {
+  window.addEventListener('click', close)
+  revealActive()
+  if (winsEl.value) {
+    resizeObserver = new ResizeObserver(syncEdge)
+    resizeObserver.observe(winsEl.value)
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('click', close)
+  resizeObserver?.disconnect()
+})
 </script>

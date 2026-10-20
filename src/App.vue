@@ -5,7 +5,6 @@
       :groups="groups"
       :group="state.group"
       :view="viewMode"
-      :up="upCount"
       :total="state.servers.length"
       :error="state.error"
       :palette="state.palette"
@@ -20,6 +19,10 @@
       @palette="onPalette"
       @settings="openSettings"
     />
+
+    <Transition name="fade">
+      <BootOverlay v-if="booting" />
+    </Transition>
 
     <div class="app">
       <NoticeBar v-if="isHome" :text="options.notice" />
@@ -57,6 +60,7 @@ import { useRoute, useRouter } from 'vue-router'
 import TmuxBar from './components/TmuxBar.vue'
 import NoticeBar from './components/NoticeBar.vue'
 import FooterLine from './components/FooterLine.vue'
+import BootOverlay from './components/BootOverlay.vue'
 import TurnstileGate from './components/TurnstileGate.vue'
 import LiveTimeoutModal from './components/LiveTimeoutModal.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
@@ -65,7 +69,7 @@ import {
   setGroup, setView, setPalette, currentView
 } from './store'
 import { getJwt } from './utils/http'
-import { isOnline, slug } from './utils/format'
+import { slug } from './utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -74,6 +78,13 @@ const settingsOpen = ref(false)
 const options = computed(() => state.options)
 const authed = computed(() => state.config?.authorization === true || !!getJwt())
 const isHome = computed(() => route.name === 'Dashboard')
+// state.loading only tracks the server list, which the detail page never fetches,
+// so it must not hold the overlay up when the app opens straight on /server/:id.
+const booting = computed(() => !state.needsTurnstile && (
+  !state.configReady ||
+  (isHome.value && state.loading && !state.servers.length) ||
+  state.pageLoading
+))
 const host = computed(() => slug(options.value.hostname) || slug(state.config?.site_title) || 'status')
 const viewMode = computed(() => currentView())
 
@@ -85,8 +96,6 @@ const groups = computed(() => {
   }
   return [...set]
 })
-
-const upCount = computed(() => state.servers.filter((s) => isOnline(s, state.tick)).length)
 
 const nodeLabel = computed(() => {
   if (route.name !== 'Server') return ''

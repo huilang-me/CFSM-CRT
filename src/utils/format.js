@@ -138,13 +138,20 @@ export function normalizeTs(value) {
   return ts < 10000000000 ? ts * 1000 : ts
 }
 
+// "last heard from" — report_timestamp only moves on full reports, while the
+// high-frequency samples bump last_updated, so take whichever is newer.
+export const lastSeenTs = (server) => Math.max(
+  normalizeTs(server?.report_timestamp),
+  normalizeTs(server?.last_updated)
+)
+
 export function isOnline(server, now = Date.now()) {
-  const ts = normalizeTs(server?.report_timestamp ?? server?.last_updated)
+  const ts = lastSeenTs(server)
   return !!ts && now - ts < ONLINE_THRESHOLD_MS
 }
 
 export function offlineFor(server, now = Date.now()) {
-  const ts = normalizeTs(server?.report_timestamp ?? server?.last_updated)
+  const ts = lastSeenTs(server)
   return ts ? Math.max(0, Math.floor((now - ts) / 1000)) : null
 }
 

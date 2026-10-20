@@ -26,6 +26,7 @@ export const state = reactive({
   sysConfig: {},
   regionStats: {},
   loading: true,
+  pageLoading: false,
   error: '',
   connected: false,
   reconnecting: false,

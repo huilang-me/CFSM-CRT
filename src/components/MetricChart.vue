@@ -13,7 +13,7 @@
         :title="'toggle ' + s.name"
         @click="toggle(s.name)"
       >
-        <i :style="{ background: s.color }"></i>{{ s.name }}<em v-if="averageOf(s) != null"> {{ format(averageOf(s)) }}</em>
+        <i :style="{ background: s.color }"></i>{{ s.name }}<em v-if="averageOf(s) != null">{{ ' ' + format(averageOf(s)) }}</em>
       </button>
     </div>
 

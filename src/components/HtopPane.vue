@@ -11,13 +11,12 @@
       <span class="name" :title="server.name">{{ server.name }}</span>
       <span v-if="regionLabel" class="tag">{{ regionLabel }}</span>
       <span class="grow"></span>
-      <span v-if="status" class="st">{{ status }}</span>
     </div>
 
     <div class="body term num">
       <template v-if="hasMetrics">
-        <div v-for="m in meters" :key="m.label" class="ln">
-          <span class="mk">{{ m.label }}</span><span class="br">[</span><span :class="'bar ' + m.level">{{ '|'.repeat(m.bars) }}</span>{{ ' '.repeat(m.room - m.bars) }}<span class="mv">{{ m.text }}</span><span class="br">]</span>
+        <div v-for="m in meters" :key="m.label" class="ln meter">
+          <span class="mk">{{ m.label }}: </span><span class="br">[</span><span class="mbar"><span :class="'bar ' + m.level" :style="{ width: m.pct + '%' }">{{ m.bar }}</span></span><span class="mv">{{ m.text }}</span><span class="br">]</span>
         </div>
         <div class="rows">
           <div class="row">
@@ -30,14 +29,14 @@
           </div>
           <div v-if="showPing && latency.length" class="lat">
             <span class="nums">
-              <span v-for="item in latency" :key="item.key"><span class="dim">{{ item.label }} </span><span :class="item.cls">{{ item.text }}</span></span>
+              <span v-for="item in latency" :key="item.key"><span class="dim lb">{{ item.label }}</span><span :class="item.cls">{{ item.text }}</span></span>
             </span>
           </div>
         </div>
       </template>
       <template v-else-if="online">
         <div class="ln dim wrap">ssh: connected to {{ host }}, waiting for the first report</div>
-        <div class="ln"><span class="cursor">█</span></div>
+        <div class="ln"><Spinner /></div>
       </template>
       <template v-else>
         <div class="ln err">ssh: connect to host {{ host }} port 22: Connection timed out</div>
@@ -49,6 +48,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import Spinner from './Spinner.vue'
 import { PING_FIELDS } from '../utils/constants'
 import {
   clamp, dur, hsize, isOnline, level, mib, offlineFor, parseLoad, pctOf,
@@ -68,11 +68,6 @@ const online = computed(() => isOnline(props.server, props.now))
 const host = computed(() => slug(props.server.name) || 'node')
 const regionLabel = computed(() => props.server.region || props.server.server_group || '')
 
-const status = computed(() => {
-  if (!online.value) return null
-  return hasMetrics.value ? null : 'waiting'
-})
-
 const hasMetrics = computed(() => online.value && Number.isFinite(Number(props.server.cpu)) && props.server.last_updated != null)
 
 const offlineText = computed(() => {
@@ -88,11 +83,11 @@ function rate(bps) {
   return (v < 10 && i > 0 ? v.toFixed(1) : Math.round(v)) + units[i]
 }
 
-function meter(label, pct, text, width = 24) {
+const BAR = '|'.repeat(96)
+
+function meter(label, pct, text) {
   const v = clamp(pct || 0, 0, 100)
-  const room = Math.max(0, width - text.length)
-  const bars = Math.min(room, Math.round((v / 100) * width))
-  return { label, level: level(v), bars, room, text }
+  return { label, level: level(v), pct: v, bar: BAR, text }
 }
 
 const meters = computed(() => {

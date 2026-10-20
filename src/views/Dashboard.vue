@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="booting" class="screen">
-      <div class="term dim">connecting<span class="cursor">█</span></div>
+      <div class="term dim">connecting <Spinner /></div>
     </div>
 
     <div v-else-if="!state.servers.length && state.error" class="screen">
@@ -21,11 +21,11 @@
       <template v-if="options.show_summary">
         <PsLine :user="user" :host="host" :sigil="sigil" cmd="top" :args="summaryArgs" />
         <div class="term num">
-          <div class="ln">top - {{ clockText }} up {{ upCount }} of {{ scope.length }} hosts,  load average: {{ summary.load.join(', ') }}</div>
-          <div class="ln"><span class="b">Hosts:</span> {{ pad(scope.length, 4) }} total, {{ pad(summary.running, 4) }} running, {{ pad(summary.waiting, 4) }} waiting, <span :class="summary.down ? 'err' : 'hi'">{{ pad(summary.down, 4) }}</span> down</div>
+          <div class="ln"><span class="b">Load avg:</span> {{ summary.load.join(', ') }}</div>
+          <div class="ln"><span class="b">Hosts:</span> {{ pad(scope.length, 4) }} total, {{ pad(summary.running, 4) }} running, <span :class="summary.down ? 'err' : 'hi'">{{ pad(summary.down, 4) }}</span> down</div>
           <div class="ln"><span class="b">%Cpu(s):</span> {{ pad(summary.cpu, 6) }} avg, {{ pad(summary.max, 6) }} max<span v-if="summary.busiest" class="dim">  ({{ summary.busiest }})</span></div>
-          <div class="ln"><span class="b">GiB Mem :</span> {{ pad(summary.memTotal, 9) }} total, {{ pad(summary.memFree, 9) }} free, {{ pad(summary.memUsed, 9) }} used</div>
-          <div class="ln"><span class="b">Net/s   :</span> {{ pad(summary.rx, 12) }} rx, {{ pad(summary.tx, 12) }} tx, {{ pad(summary.monthly, 12) }} this month</div>
+          <div class="ln"><span class="b">{{ memLabel }}</span> {{ pad(summary.memTotal, 9) }} total, {{ pad(summary.memFree, 9) }} free, {{ pad(summary.memUsed, 9) }} used</div>
+          <div class="ln"><span class="b">{{ netLabel }}</span> {{ pad(summary.rx, 12) }} rx, {{ pad(summary.tx, 12) }} tx, {{ pad(summary.monthly, 12) }} this month</div>
         </div>
       </template>
 
@@ -95,6 +95,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import CliPrompt from '../components/CliPrompt.vue'
+import Spinner from '../components/Spinner.vue'
 import PsLine from '../components/PsLine.vue'
 import HtopPane from '../components/HtopPane.vue'
 import TopTable from '../components/TopTable.vue'
@@ -166,7 +167,6 @@ const summary = computed(() => {
   const list = scope.value
   const up = list.filter((s) => isOnline(s, state.tick))
   const live = up.filter((s) => Number.isFinite(Number(s.cpu)))
-  const waiting = up.length - live.length
   const down = list.length - up.length
   const avg = (fn) => (live.length ? live.reduce((acc, s) => acc + fn(s), 0) / live.length : 0)
   const load = [0, 1, 2].map((i) => avg((s) => parseLoad(s.load_avg)[i]).toFixed(2))
@@ -184,8 +184,7 @@ const summary = computed(() => {
     cpu,
     max,
     busiest: busiest ? busiest.name : '',
-    running: live.length,
-    waiting,
+    running: up.length,
     down,
     memTotal: gib(memTotal),
     memUsed: gib(memUsed),
@@ -196,7 +195,15 @@ const summary = computed(() => {
   }
 })
 
-const pad = (v, w) => String(v).padStart(w)
+// narrow screens: drop the column padding that top-style output uses to line up
+// the numbers, otherwise the summary wraps badly and scrolls sideways.
+const compactQuery = window.matchMedia('(max-width: 760px)')
+const compact = ref(compactQuery.matches)
+const syncCompact = () => { compact.value = compactQuery.matches }
+
+const pad = (v, w) => String(v).padStart(compact.value ? 1 : w)
+const memLabel = computed(() => (compact.value ? 'GiB Mem:' : 'GiB Mem :'))
+const netLabel = computed(() => (compact.value ? 'Net/s:' : 'Net/s   :'))
 
 const whereArg = computed(() => (state.group === null ? '' : ' --group=' + JSON.stringify(state.group || 'ungrouped')))
 const grepArg = computed(() => (state.query ? ' | grep -i ' + JSON.stringify(state.query) : ''))
@@ -369,6 +376,8 @@ const onRefresh = async () => {
 
 onMounted(async () => {
   try { localStorage.setItem(STORAGE.LAST_LOGIN, String(Date.now())) } catch (_) {}
+  syncCompact()
+  compactQuery.addEventListener('change', syncCompact)
   window.addEventListener('keydown', onKey)
   window.addEventListener('crt:refresh', onRefresh)
   if (!state.configReady) await ensureConfig()
@@ -378,6 +387,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  compactQuery.removeEventListener('change', syncCompact)
   window.removeEventListener('keydown', onKey)
   window.removeEventListener('crt:refresh', onRefresh)
   stopLive()
