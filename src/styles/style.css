@@ -268,6 +268,8 @@ html.scan-on .scan { display: block; }
 .set-input:focus, .set-area:focus { outline: 1px dashed var(--accent); outline-offset: 1px; }
 
 .detail .term { margin-top: 2px; }
+/* uptime 一行放不下时把 load average 折到第二行，避免窄屏横向滚动 */
+.detail .ln.uptime { display: flex; flex-wrap: wrap; column-gap: 1ch; }
 .detail .blk { padding-bottom: 2px; }
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 22px 16px; margin-top: 16px; }
 .chart { position: relative; border: 1px solid var(--faint); padding: 16px 14px 8px; min-width: 0; }

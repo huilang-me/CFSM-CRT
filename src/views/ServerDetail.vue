@@ -47,7 +47,7 @@
         <div class="blk">
           <PsLine :user="user" :host="nodeHost" :sigil="sigil" cmd="uptime" />
           <div class="term num">
-            <div class="ln"> {{ clockText }} up {{ uptimeValue }},  {{ server.processes ?? '?' }} tasks,  load average: {{ loadText }}</div>
+            <div class="ln uptime"><span class="up"> {{ clockText }} up {{ uptimeValue }},  {{ server.processes ?? '?' }} tasks,</span><span class="ld">load average: {{ loadText }}</span></div>
           </div>
         </div>
 

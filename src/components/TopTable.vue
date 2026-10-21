@@ -59,6 +59,21 @@ const rate = (bps) => {
   return (v < 10 && i > 0 ? v.toFixed(1) : Math.round(v)) + units[i]
 }
 
+const connNum = (value) => {
+  if (value === null || value === undefined || value === '') return null
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+
+const connCount = (server) => connNum(server.tcp_conn) !== null || connNum(server.udp_conn) !== null
+
+const connCell = (server) => {
+  if (!connCount(server)) return '-'
+  const tcp = connNum(server.tcp_conn)
+  const udp = connNum(server.udp_conn)
+  return (tcp === null ? '-' : String(tcp)) + '/' + (udp === null ? '-' : String(udp))
+}
+
 const pingCell = (server) => {
   const raw = server.ping_ct
   if (raw === undefined || raw === false || raw === 'false') return '-'
@@ -87,6 +102,7 @@ const cols = computed(() => {
       cls: (s) => (Number(s.disk_total) > 0 ? level(pctOf(s.disk_used, s.disk_total)) : 'dim') },
     { k: 'net', t: 'RX/s', w: 10, r: 1, v: (s) => rate(s.net_in_speed) },
     { t: 'TX/s', w: 10, r: 1, v: (s) => rate(s.net_out_speed) },
+    { t: 'TCP/UDP', w: 9, r: 1, v: connCell, cls: (s) => (connCount(s) ? null : 'dim') },
     { t: '%QTA', w: 5, r: 1, v: (s) => (Number.parseFloat(s.traffic_limit) > 0 ? trafficPercent(s).toFixed(1) : '-'),
       cls: (s) => (Number.parseFloat(s.traffic_limit) > 0 ? level(trafficPercent(s)) : 'dim') },
     { k: 'seen', t: 'SEEN', w: 8, r: 1, v: (s) => {
